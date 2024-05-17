@@ -1,25 +1,30 @@
 import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
-
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import ssl
+
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
 
 # Download NLTK resources
-
-
-
+nltk.download('punkt')
+nltk.download('stopwords')
 
 # Sample dataset
-texts = [
-    "This is a sample document.",
-    "Text similarity is important for many applications.",
-    "Natural language processing helps analyze text data.",
-    "Python is commonly used for text processing tasks.",
-    "Machine learning algorithms can be applied to text data."
+medical_texts = [
+    "Patient has a high temperature and sore throat.",
+    "Symptoms include vomiting and feeling unwell.",
+    "High fever and persistent cough observed.",
+    "Experiencing fatigue and muscle pain.",
+    "Has a sore throat and keeps vomiting."
 ]
 
 # Preprocessing
@@ -35,14 +40,14 @@ def preprocess(text):
     return ' '.join(tokens)
 
 # Preprocess all texts
-preprocessed_texts = [preprocess(text) for text in texts]
+preprocessed_texts = [preprocess(text) for text in medical_texts]
 
 # Feature extraction using TF-IDF
 tfidf_vectorizer = TfidfVectorizer()
 tfidf_matrix = tfidf_vectorizer.fit_transform(preprocessed_texts)
 
 # Input text
-input_text = "Text analysis is a crucial part of natural language processing."
+input_text = "I have a high temperature, have not been feeling well, I have a sore throat and keep vomiting."
 
 # Preprocess input text
 preprocessed_input = preprocess(input_text)
@@ -59,5 +64,5 @@ ranked_texts = sorted(enumerate(similarities[0]), key=lambda x: x[1], reverse=Tr
 # Print top N similar texts
 top_n = 3
 for idx, sim in ranked_texts[:top_n]:
-    print(f"Similarity: {sim:.2f}\nText: {texts[idx]}")
+    print(f"Similarity: {sim:.2f}\nText: {medical_texts[idx]}")
     print("----")
