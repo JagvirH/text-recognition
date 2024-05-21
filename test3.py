@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -7,10 +7,17 @@ app = Flask(__name__)
 def home():
     return 'Flask server is running!'
 
-# Simple API that returns a message
-@app.route('/hello', methods=['GET'])
+# Simple API that returns personalized greetings
+@app.route('/hello', methods=['POST'])
 def hello():
-    return jsonify(message="Hello, world!")
+    data = request.get_json()
+    print(data)  # Print the JSON data from the request
+    search = data.get('search', '')
+    logs = data.get('data', [])
+    print(f"Search: {search}")
+    for log in logs:
+        print(f"ID: {log['id']}, Description: {log['description']}")  # Create personalized greetings
+    return jsonify("hi")  # Return the greetings as JSON
 
 if __name__ == '__main__':
     app.run(debug=True)
