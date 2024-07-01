@@ -36,6 +36,7 @@ def hello():
     logs = data.get('data', [])
     
     # Extract descriptions and ids
+    title = [log['title'] for log in logs]
     descriptions = [log['description'] for log in logs]
     ids = [log['id'] for log in logs]
     
@@ -63,6 +64,7 @@ def hello():
     for idx, similarity in ranked_indices:
         ranked_results.append({
             'id': ids[idx],
+            'title': title[idx],
             'description': descriptions[idx],
             'similarity': similarity * 100  # Convert to percentage
         })
