@@ -16,7 +16,17 @@ connection = mysql.connector.connect(**config)
 cursor = connection.cursor()
 
 # Write the SQL query
-query = "SELECT * FROM Logs"
+query = """
+    SELECT 
+        Logs.Id AS logId, 
+        Logs.Title AS logTitle, 
+        Logs.Description AS logDescription, 
+        GROUP_CONCAT(Tags.Title) AS tagTitles 
+    FROM Logs 
+    LEFT JOIN Log_Tags ON Logs.Id = Log_Tags.LogId 
+    LEFT JOIN Tags ON Log_Tags.TagId = Tags.Id
+    GROUP BY Logs.Id, Logs.Title, Logs.Description
+"""
 
 # Execute the query
 cursor.execute(query)
