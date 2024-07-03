@@ -1,4 +1,31 @@
 import mysql.connector
+from flask import Flask, request, jsonify
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import ssl
+
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+def preprocess(text):
+    tokens = word_tokenize(text.lower())
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+    stemmer = PorterStemmer()
+    tokens = [stemmer.stem(word) for word in tokens]
+    return ' '.join(tokens)
+
+# Download NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
 
 # Replace with your MySQL database credentials
 config = {
@@ -40,6 +67,8 @@ column_names = cursor.column_names
 # Print the results
 for row in results:
     print(row)
+
+
 
 # Close the cursor and the connection
 cursor.close()
