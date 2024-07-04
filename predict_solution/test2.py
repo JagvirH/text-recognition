@@ -38,7 +38,7 @@ def preprocess(text):
     return ' '.join(tokens)
 
 # Function to fetch and rank logs
-def fetch_and_rank_logs(search_text):
+def fetch_and_rank_logs(search_text, top_n=5):
     # Establish a connection to the database
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
@@ -100,7 +100,7 @@ def fetch_and_rank_logs(search_text):
 
     # Prepare ranked results
     ranked_results = []
-    for idx, similarity in ranked_indices:
+    for idx, similarity in ranked_indices[:top_n]:  # Limit the number of results to top_n
         ranked_results.append({
             'id': ids[idx],
             'title': titles[idx],
@@ -114,9 +114,37 @@ def fetch_and_rank_logs(search_text):
 # Input search text
 search_text = "I have a headache and feel nauseous"
 
-# Fetch and rank logs
-ranked_logs = fetch_and_rank_logs(search_text)
+# Fetch and rank logs, showing only the top 5 results
+ranked_logs = fetch_and_rank_logs(search_text, top_n=6)
 
+
+allSolutions = []
 # Print ranked results
 for result in ranked_logs:
-    print(result)
+    print(result["id"])
+    log_id = result["id"]
+
+    # Establish a connection to the database
+    connection = mysql.connector.connect(**config)
+    cursor = connection.cursor()
+
+    query = """
+        SELECT Solution FROM Solutions WHERE LogId = %s
+    """
+
+    # Execute the query and fetch results
+    cursor.execute(query, (log_id,))
+    solutions = cursor.fetchall()
+
+    # Close the cursor and the connection
+    cursor.close()
+    connection.close()
+
+    # Print the solutions
+    for solution in solutions:
+        print(solution[0])
+        allSolutions.append(solution[0])
+        
+
+print(allSolutions)
+
