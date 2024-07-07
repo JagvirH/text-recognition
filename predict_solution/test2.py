@@ -6,6 +6,12 @@ from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import ssl
+import nltk
+from transformers import pipeline
+from nltk.tokenize import sent_tokenize
+
+# Download NLTK resources
+nltk.download('punkt')
 
 # SSL context handling
 try:
@@ -118,7 +124,7 @@ search_text = "I have a headache and feel nauseous"
 ranked_logs = fetch_and_rank_logs(search_text, top_n=6)
 
 
-allSolutions = []
+all_Solutions = []
 # Print ranked results
 for result in ranked_logs:
     print(result["id"])
@@ -143,8 +149,18 @@ for result in ranked_logs:
     # Print the solutions
     for solution in solutions:
         print(solution[0])
-        allSolutions.append(solution[0])
+        all_Solutions.append(solution[0])
         
 
-print(allSolutions)
+#print(all_Solutions)
 
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+
+# Combine all solutions into a single text
+combined_solutions = " ".join(all_Solutions)
+
+# Generate a summary using the summarization pipeline
+summary = summarizer(combined_solutions, max_length=180, min_length=30, do_sample=False)
+
+# Print the summary
+print("Summary:", summary[0]['summary_text'])
