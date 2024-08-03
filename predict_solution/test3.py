@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import ssl
 from transformers import pipeline
+from collections import Counter
 
 app = Flask(__name__)
 
@@ -34,11 +35,15 @@ config = {
 
 # Preprocessing function
 def preprocess(text):
+    # Tokenize the text and convert to lowercase
     tokens = word_tokenize(text.lower())
+    # Remove stop words
     stop_words = set(stopwords.words('english'))
     tokens = [word for word in tokens if word not in stop_words]
+    # Stem the tokens
     stemmer = PorterStemmer()
     tokens = [stemmer.stem(word) for word in tokens]
+    # Join the tokens back into a string
     return ' '.join(tokens)
 
 # Function to fetch and rank logs
@@ -58,10 +63,7 @@ def fetch_and_rank_logs(search_text, top_n=5):
         LEFT JOIN Log_Tags ON Logs.Id = Log_Tags.LogId 
         LEFT JOIN Tags ON Log_Tags.TagId = Tags.Id
         GROUP BY Logs.Id, Logs.Title, Logs.Description;
-
     """
-
-    
 
     # Execute the query and fetch results
     cursor.execute(query)
@@ -71,7 +73,7 @@ def fetch_and_rank_logs(search_text, top_n=5):
     cursor.close()
     connection.close()
 
-    # Extract log data
+    # Extract log data into a list of dictionaries
     logs = []
     for row in results:
         logs.append({
@@ -99,7 +101,7 @@ def fetch_and_rank_logs(search_text, top_n=5):
     # Transform input text to TF-IDF representation
     input_tfidf = tfidf_vectorizer.transform([preprocessed_input])
 
-    # Calculate cosine similarity
+    # Calculate cosine similarity between input text and log descriptions
     similarities = cosine_similarity(input_tfidf, tfidf_matrix)
 
     # Rank descriptions based on similarity
@@ -120,6 +122,7 @@ def fetch_and_rank_logs(search_text, top_n=5):
 
 @app.route('/get_solutions_summary', methods=['POST'])
 def get_solutions_summary():
+    # Parse the input JSON data
     data = request.get_json()
     search_text = data.get('search', '')
     
@@ -128,6 +131,7 @@ def get_solutions_summary():
 
     all_solutions = []
     log_ids = []
+    tag_counter = Counter()  # Counter to track tag frequencies
     for result in ranked_logs:
         log_id = result["id"]
         log_ids.append(log_id)
@@ -136,11 +140,10 @@ def get_solutions_summary():
         connection = mysql.connector.connect(**config)
         cursor = connection.cursor()
 
+        # Query to get solutions for the log
         query = """
             SELECT Solution FROM Solutions WHERE LogId = %s
         """
-
-        # Execute the query and fetch results
         cursor.execute(query, (log_id,))
         solutions = cursor.fetchall()
 
@@ -151,6 +154,11 @@ def get_solutions_summary():
         # Collect solutions
         for solution in solutions:
             all_solutions.append(solution[0])
+
+        # Count tags from the ranked logs
+        if result['tags']:
+            tags = result['tags'].split(',')
+            tag_counter.update(tags)
 
     # Summarize the solutions using a summarization pipeline
     summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
@@ -165,10 +173,15 @@ def get_solutions_summary():
     summary_text = summary[0]['summary_text']
     instructive_summary = f"Based on user experiences, the best solutions include: {summary_text}"
 
-    # Return the top similar log IDs and the instructive summary
+    # Find the top 3 most common tags
+    top_tags = tag_counter.most_common(3)
+    top_tags_list = [{'tag': tag.split(' (')[0], 'type': tag.split(' (')[1][:-1]} for tag, count in top_tags]
+
+    # Return the top similar log IDs, the instructive summary, and the top 3 tags
     response = {
         'log_ids': log_ids,
-        'instructive_summary': instructive_summary
+        'instructive_summary': instructive_summary,
+        'top_tags': top_tags_list
     }
     return jsonify(response)
 
