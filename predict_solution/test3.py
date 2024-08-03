@@ -53,12 +53,15 @@ def fetch_and_rank_logs(search_text, top_n=5):
             Logs.Id AS logId, 
             Logs.Title AS logTitle, 
             Logs.Description AS logDescription, 
-            GROUP_CONCAT(Tags.Title) AS tagTitles 
+            GROUP_CONCAT(CONCAT(Tags.Title, ' (', Tags.Type, ')')) AS tagDetails
         FROM Logs 
         LEFT JOIN Log_Tags ON Logs.Id = Log_Tags.LogId 
         LEFT JOIN Tags ON Log_Tags.TagId = Tags.Id
-        GROUP BY Logs.Id, Logs.Title, Logs.Description
+        GROUP BY Logs.Id, Logs.Title, Logs.Description;
+
     """
+
+    
 
     # Execute the query and fetch results
     cursor.execute(query)
