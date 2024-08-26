@@ -187,5 +187,60 @@ def get_solutions_summary():
     }
     return jsonify(response)
 
+@app.route('/get_tag_percentage', methods=['GET'])
+def get_tag_percentage():
+    # Establish a connection to the database
+    connection = mysql.connector.connect(**config)
+    cursor = connection.cursor()
+
+    # SQL query to fetch logs and their associated tag titles
+    query = """
+        SELECT Tags.Title, Log_Tags.TagId 
+        FROM Log_Tags 
+        JOIN Tags ON Log_Tags.TagId = Tags.Id
+    """
+    cursor.execute(query)
+    results = cursor.fetchall()
+
+    # Close the cursor and the connection
+    cursor.close()
+    connection.close()
+
+    # Extract the tag titles
+    tags = [row[0] for row in results]
+
+    # Count occurrences of each tag title
+    tag_counts = Counter(tags)
+
+    # Calculate the total number of tags
+    total_tags = sum(tag_counts.values())
+
+    # Calculate the percentage of each tag
+    tag_percentages = {tag: (count / total_tags) * 100 for tag, count in tag_counts.items()}
+
+    # Identify tags with less than 5% and group them into "Other"
+    other_tags_percentage = 0
+    filtered_tag_percentages = {}
+    for tag, percentage in tag_percentages.items():
+        if percentage < 5:
+            other_tags_percentage += percentage
+        else:
+            filtered_tag_percentages[tag] = percentage
+
+    # Add the "Other" category if there are tags less than 5%
+    if other_tags_percentage > 0:
+        filtered_tag_percentages["Other"] = other_tags_percentage
+
+    # Sort the tags by percentage in descending order
+    sorted_tags = sorted(filtered_tag_percentages.items(), key=lambda item: item[1], reverse=True)
+
+    # Prepare the response
+    response = [{'tag_title': tag, 'percentage': round(percentage, 2)} for tag, percentage in sorted_tags]
+
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+

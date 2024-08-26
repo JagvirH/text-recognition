@@ -14,24 +14,28 @@ config = {
 connection = mysql.connector.connect(**config)
 cursor = connection.cursor()
 
-# SQL query to fetch logs and their tags
-query = "SELECT * FROM Log_Tags"
+# SQL query to fetch logs and their associated tag titles using aliases
+query = """
+    SELECT Tags.Title, Log_Tags.TagId 
+    FROM Log_Tags 
+    JOIN Tags ON Log_Tags.TagId = Tags.Id
+"""
 cursor.execute(query)
 results = cursor.fetchall()
 
-# Extract the tags
-tags = [row[1] for row in results]
+# Extract the tag titles
+tags = [row[0] for row in results]
 
-# Count occurrences of each tag
+# Count occurrences of each tag title
 tag_counts = Counter(tags)
 
-# Calculate total number of tags
+# Calculate the total number of tags
 total_tags = sum(tag_counts.values())
 
-# Calculate percentage of each tag
+# Calculate the percentage of each tag
 tag_percentages = {tag: (count / total_tags) * 100 for tag, count in tag_counts.items()}
 
-# Identify tags with less than 1% and group them into "Other"
+# Identify tags with less than 5% and group them into "Other"
 other_tags_percentage = 0
 filtered_tag_percentages = {}
 for tag, percentage in tag_percentages.items():
@@ -40,14 +44,18 @@ for tag, percentage in tag_percentages.items():
     else:
         filtered_tag_percentages[tag] = percentage
 
-# Add the "Other" category if there are tags less than 1%
+# Add the "Other" category if there are tags less than 5%
 if other_tags_percentage > 0:
     filtered_tag_percentages["Other"] = other_tags_percentage
 
 # Sort the tags by percentage in descending order
 sorted_tags = sorted(filtered_tag_percentages.items(), key=lambda item: item[1], reverse=True)
 
-# Output the results
+# Output the results with tag titles
 print("Tag percentages (including 'Other'):")
 for tag, percentage in sorted_tags:
-    print(f"Tag: {tag}, Percentage: {percentage:.2f}%")
+    print(f"Tag Title: {tag}, Percentage: {percentage:.2f}%")
+
+# Close the database connection
+cursor.close()
+connection.close()
