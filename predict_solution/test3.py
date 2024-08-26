@@ -178,6 +178,8 @@ def get_solutions_summary():
     top_tags_list = [{'tag': tag.split(' (')[0], 'type': tag.split(' (')[1][:-1]} for tag, count in top_tags]
 
     # Return the top similar log IDs, the instructive summary, and the top 3 tags
+    print(top_tags_list)
+
     response = {
         'log_ids': log_ids,
         'instructive_summary': instructive_summary,
